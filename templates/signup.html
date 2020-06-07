@@ -1,0 +1,62 @@
+
+{% extends "header.html" %}
+{% block content %}
+    <div class="container">
+        <h1>Sign Up</h1>
+        <form id="signUpForm" action="./signUpAuth">
+            <label>Username</label>
+            <input type="text" id="username">
+            <label>Password</label>
+            <input type="text" id="password">
+            <button type="submit" class="btn btn-primary btn-mine" id="signUpBtn">Sign Up</button>
+            <div id="error"></div>
+        </form>
+    </div>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $(document).on('submit', "#signUpForm", function (event) {
+                event.preventDefault()
+                if (validateData()) {
+                    document.getElementById("error").innerHTML = ""
+                    signUpUser()
+                }
+                else {
+                    document.getElementById("error").innerHTML = "Please enter a username and password"
+                }
+            })
+        })
+
+        function signUpUser() {
+            var user = new Object()
+            user.username= document.getElementById("username").value;
+            user.password = document.getElementById("password").value;
+            $.ajax({url:"/signUpAuth",
+                    method: "POST",
+                    dataType: "json",
+                    data: JSON.stringify(user),
+                    contentType:'application/json;charset=UTF-8',
+                    success: function(response) {
+                        if (response == "true") {
+                            window.location.href = "/";
+                        }
+                        else {
+                            document.getElementById("error").innerHTML = "That username is already taken"
+                        }
+                        
+                    }
+                    })
+            event.preventDefault()
+        }
+
+        function validateData() {
+            username = (document.getElementById("username").value).trim()
+            password = document.getElementById("password").value
+            if (username.length > 0 && password.length > 0) {
+                return true
+            }
+            return false
+        }
+
+    </script>
+
+{% endblock %}

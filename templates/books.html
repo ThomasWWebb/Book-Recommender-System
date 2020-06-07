@@ -1,0 +1,183 @@
+{% extends "header.html" %}
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+    <div class="notification is-danger">
+        {{ messages[0] }}.
+    </div>
+{% endif %}
+{% endwith %}
+{% block content %}
+<div class="container">
+        <h1>Books</h1>
+        <form id="newBookForm">
+            <label for="title">Title</label>
+            <input type="text" name="title" id="title">
+            <label for="genre">Genre</label>
+            <input type="text" name="genre" id="genre">
+            <button type="submit" class="btn btn-primary btn-mine" value="Add" id="add">Add</button>
+            <div id="newBookError"></div>
+        </form>
+        <div class = "container" id="books">
+            {% for book in books %}
+                <div class="container" id="{{ book.bookID }}bookContainer">
+                    <span id="{{book.bookID}}BookSpan">{{book.title}}</span>
+                    <form id="bookUpdateForm" name="{{book.bookID}}">
+                        <input type="text" value="{{book.title}}" name="title" id="{{book.bookID}}title">
+                        <input type="text" value="{{book.genre}}" name="genre" id="{{book.bookID}}genre">
+                        <button type="submit" class="btn btn-primary btn-mine" value="Update" id="update">Update</button>
+                        <button class="btn btn-primary btn-mine" value="{{book.bookID}}" id="delete">Delete</button>
+                        <div id="{{book.bookID}}error"></div>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $(document).on('submit', "#newBookForm", function (event) {
+                event.preventDefault()
+                if (validateNewBook()){
+                    document.getElementById("newBookError").innerHTML = ""
+                    addBook()
+                } else {
+                    document.getElementById("newBookError").innerHTML = "Please enter a title and genre"
+                }
+                
+            })
+
+            $(document).on('submit', "#bookUpdateForm", function (event) {
+                event.preventDefault()
+                bookID = $(this).attr("name")
+                if (validateUpdateBook(bookID)) {
+                    updateBook(bookID)
+                } else {
+                    document.getElementById(bookID + "error").innerHTML = "Please enter a title and genre"
+                }
+                    
+            })
+
+            $(document).on('click', "#delete", function (event) {
+                event.preventDefault()
+                deleteBook($(this).attr("value"))
+                contID = "#" + ($(this).attr("value")).toString() + "bookContainer"
+                $(contID).remove();
+            })
+        })
+
+        function validateUpdateBook(bookID) {
+            title= document.getElementById(bookID + "title").value;
+            genre = document.getElementById(bookID + "genre").value;
+            if (title.length > 0 && genre.length > 0) {
+                return true
+            }
+            return false
+        } 
+
+        function validateNewBook() {
+            title = (document.getElementById("title").value).trim()
+            genre = document.getElementById("genre").value.trim()
+            if (title.length > 0 && genre.length > 0) {
+                return true
+            }
+            return false
+        }
+
+        function deleteBook(bookID) {
+            var book = new Object()
+            book.bookID= bookID
+            
+            $.ajax({url:"/bookDelete",
+                    method: "POST",
+                    dataType: "json",
+                    data: JSON.stringify(book),
+                    contentType:'application/json;charset=UTF-8',
+                    })
+            event.preventDefault();
+        }
+
+        function updateBook(bookID) {
+            var book = new Object()
+            book.title= document.getElementById(bookID + "title").value;
+            book.genre = document.getElementById(bookID + "genre").value;
+            book.bookID = bookID
+            $.ajax({url:"/bookUpdate",
+                    method: "POST",
+                    dataType: "json",
+                    data: JSON.stringify(book),
+                    contentType:'application/json;charset=UTF-8', 
+                    success: function (response) {
+                        if (response == "true") {
+                            document.getElementById(bookID + "error").innerHTML = ""
+                            document.getElementById(bookID + "BookSpan").innerHTML = book.title
+                        } else {
+                            document.getElementById(bookID + "error").innerHTML = "There is already a book with that title"
+                        }
+                    }
+                    }) 
+            event.preventDefault()
+        }
+
+        function addBook() {
+            var book = new Object()
+            book.title= document.getElementById("title").value;
+            book.genre = document.getElementById("genre").value;
+            
+            $.ajax({url:"/addBook",
+                    method: "POST",
+                    dataType: "json",
+                    data: JSON.stringify(book),
+                    contentType:'application/json;charset=UTF-8',
+                    success: function (response) {
+                        if (response.result == "true") {
+                            document.getElementById("newBookError").innerHTML = ""
+                            addBookHTML(response)
+                        } else {
+                            document.getElementById("newBookError").innerHTML = "There is already a book with that title"
+                        }
+                    }
+                    })
+            event.preventDefault();  
+            document.getElementById("newBookForm").reset()
+        }
+
+        function addBookHTML(response) {
+            var div = document.createElement("div")
+            div.className = "container"
+            div.id = response.bookID.toString() + "bookContainer"
+            var title = document.createElement("span")
+            title.id = response.bookID + "BookSpan"
+            title.innerHTML = response.title
+            div.appendChild(title)
+            var form = document.createElement("form")
+            form.id = "bookUpdateForm"
+            form.name = response.bookID
+            var titleInput = document.createElement("input")
+            titleInput.id = response.bookID.toString() + "title"
+            titleInput.value = response.title
+            form.appendChild(titleInput)
+            var genreInput = document.createElement("input")
+            genreInput.id = response.bookID.toString() + "genre"
+            genreInput.value = response.genre
+            form.appendChild(genreInput)
+            var update = document.createElement("button")
+            update.id = "update"
+            update.value = response.bookID.toString()
+            update.className = "btn btn-primary btn-mine"
+            update.innerHTML = "Update"
+            update.type = "submit"
+            form.append(update)
+            var deleteButton = document.createElement("button")
+            deleteButton.value = response.bookID
+            deleteButton.className = "btn btn-primary btn-mine"
+            deleteButton.id = "delete"
+            deleteButton.innerHTML = "Delete"
+            form.appendChild(deleteButton)
+            var errorDiv = document.createElement("div")
+            errorDiv.id = response.bookID.toString() + "error"
+            form.appendChild(errorDiv)
+            div.appendChild(form)
+            $("#books").append(div) 
+        }
+        
+    </script>
+{% endblock %}

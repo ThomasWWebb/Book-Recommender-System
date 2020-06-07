@@ -1,0 +1,58 @@
+{% extends "header.html" %}
+{% block content %}
+    <div class="container">
+            <span id="span">Your profile : {{user.username}}</span>
+            <form id="userUpdateForm">
+                <label>Username</label>
+                <input type="text" value="{{user.username}}" name="username" id="username">
+                <label>Password</label>
+                <input type="text" value="{{user.password}}" name="password" id="password">
+                <button type="submit" class="btn btn-primary btn-mine" value="Update" id="update">Update</button>
+                <div id="error"></div>
+            </form>
+        </div>
+    </div>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $(document).on('submit', "#userUpdateForm", function (event) {
+                event.preventDefault()
+                if (validateUser()) {
+                    document.getElementById("error").innerHTML = ""
+                    updateUser()
+                } else {
+                    document.getElementById("error").innerHTML = "Please enter a username and password"
+                }
+            })
+        })
+
+        function validateUser() {
+            username = (document.getElementById("username").value).trim()
+            password = document.getElementById("password").value
+            if (username.length > 0 && password.length > 0) {
+                return true
+            }
+            return false
+        }
+
+        function updateUser() {
+            var user = new Object()
+            user.username= document.getElementById("username").value;
+            user.password = document.getElementById("password").value;
+            $.ajax({url:"/updateProfile",
+                    method: "POST",
+                    dataType: "json",
+                    data: JSON.stringify(user),
+                    contentType:'application/json;charset=UTF-8', 
+                    success: function (response) {
+                        if (response == "true") {
+                            document.getElementById("error").innerHTML = ""
+                            document.getElementById("span").innerHTML = "Your profile : " + user.username
+                        } else {
+                            document.getElementById("error").innerHTML = "There is already a user with that username"
+                        }
+                    }
+                    })
+            event.preventDefault()
+        }
+    </script>
+{% endblock %}

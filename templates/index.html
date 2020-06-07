@@ -1,0 +1,226 @@
+{% extends "header.html" %}
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+    <div class="notification is-danger">
+        {{ messages[0] }}.
+    </div>
+{% endif %}
+{% endwith %}
+{% block content %}
+<div class="container" id="indexContainer">
+    <div class="container" id="bookSelect" name="bookSelect">
+        <h2>Ratings</h2>
+        <form id="addRatingForm">
+            <select id="bookChoice">
+                {% for book in books %}
+                    <option value={{ book.bookID }}>{{ book.title }}</option>
+                {% endfor %}
+            </select>
+            <input type="number" id="bookRating" name="bookRating" required>
+            <button type="submit" class="btn btn-primary btn-mine" value="Add" id="add">Add</button>
+            <div id="error"></div>
+        </form>
+    </div>
+    <div class="container">
+        <div class="row">
+          <div class="col" id="ratingsCol">
+            <h2>Your Ratings:</h2>
+            {% for userRating in userRatings %}
+                <div class="bookContainer container" id="{{userRating.rating.bookID}}bookContainer">
+                    <span>{{userRating.title}}</span>
+                    <form id="ratingUpdateForm" name="{{userRating.rating.bookID}}">
+                        <input type="number" value="{{userRating.rating.bookRating}}" name="bookRating" id="{{userRating.rating.bookID}}">
+                        <button type="submit" class="btn btn-primary btn-mine" value="Update" id="update">Update</button>
+                        <button class="btn btn-primary btn-mine" value="{{userRating.rating.bookID}}" id="delete">Delete</button>
+                        <div id="{{userRating.rating.bookID}}error"></div>
+                    </form>
+                </div>
+            {% endfor %}
+          </div>
+          <div class="col" id="recommendationsCol">
+            <h2>Your recommendations:</h2>
+            <label for="genreChoice">Genre:</label>
+            <select id="genreChoice">
+                {% for genre in genres %}
+                    <option value={{ genre }}>{{ genre }}</option>
+                {% endfor %}
+            </select>
+            <div class="bookContainer container" id="recommendations">
+                {% for recommend in recommendations %}
+                    <p>{{recommend}}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+        
+
+    </div>
+<script type="text/javascript">
+
+    $(document).ready(function() {
+        
+        $(document).on('submit', '#addRatingForm', function(event){
+            event.preventDefault()
+            rating = document.getElementById("bookRating").value
+            if (validateRating(rating, "")) {
+                addRating(updatePage)
+                getRecommendations(document.getElementById("genreChoice").value)
+            } 
+        });
+
+        $(document).on('submit', '#ratingUpdateForm', function(event){
+            event.preventDefault()
+            bookID = $(this).attr("name")
+            rating = document.getElementById(bookID).value
+            if (validateRating(rating, bookID)) {
+                updateRating(bookID)
+                getRecommendations(document.getElementById("genreChoice").value)
+            }
+        });
+
+        $(document).on('click', '#delete', function(event){
+            event.preventDefault()
+            deleteRating(this.value)
+            contID = "#" + (this.value).toString() + "bookContainer"
+            $(contID).remove();
+            getRecommendations(document.getElementById("genreChoice").value)
+        });
+
+        $(document).on('change', '#genreChoice', function(event){
+            getRecommendations(document.getElementById("genreChoice").value)
+        })
+    })
+
+    function validateRating(rating, bookID) {
+        if ((rating.toString()).length > 0) {
+            if (Number.isInteger(+rating)) {
+                if (rating > -1 && rating < 6) {
+                    document.getElementById(bookID + "error").innerHTML = ""
+                    return true
+                }
+            }
+        }
+        document.getElementById(bookID + "error").innerHTML = "Please enter a valid integer rating between 0 and 5" 
+        return false
+
+    }
+
+    function getRecommendations(genre) {
+        $.ajax({url:"/recommendations",
+                method: "POST",
+                dataType: "json",
+                data: JSON.stringify(genre),
+                contentType:'application/json;charset=UTF-8', 
+                success:  function (response) {
+                    displayRecommendations(response)
+                }
+                })
+    }
+
+    function displayRecommendations(recommendations) {
+        var div = document.createElement("div")
+        div.className = "bookContainer container"
+        div.id = "recommendations"
+        for (index = 0; index < recommendations.length; index++) { 
+            var pLine = document.createElement("p")
+            pLine.innerHTML = recommendations[index]
+            div.appendChild(pLine)
+        }
+        $("#recommendations").remove()
+        $("#recommendationsCol").append(div)
+    }
+    function deleteRating(bookID) {
+        var rating = new Object()
+        rating.bookID= bookID
+        
+        $.ajax({url:"/ratingDelete",
+                method: "POST",
+                dataType: "json",
+                data: JSON.stringify(rating),
+                contentType:'application/json;charset=UTF-8'
+                })
+        event.preventDefault(); 
+    }
+
+    function updateRating(bookID) {
+        var rating = new Object()
+        rating.bookID= bookID
+        rating.bookRating = document.getElementById(rating.bookID).value;
+        
+        $.ajax({url:"/ratingUpdate",
+                method: "POST",
+                dataType: "json",
+                data: JSON.stringify(rating),
+                contentType:'application/json;charset=UTF-8'
+                })
+        event.preventDefault();  
+
+    }
+
+    function updatePage(response) {
+        if (response.action == "update") {
+            updateExistingRating(response)
+        } else if (response.action == "new") {
+            addNewRating(response)
+        }
+    }
+
+    function updateExistingRating(response) {
+        document.getElementById(response.bookID).value = response.bookRating
+        document.getElementById("addRatingForm").reset()
+    }
+
+    function addNewRating(response) {
+        var div = document.createElement("div")
+        div.className = "bookContainer container"
+        div.id = response.bookID.toString() + "bookContainer"
+        var title = document.createElement("span")
+        title.innerHTML = response.title
+        div.appendChild(title)
+        var form = document.createElement("form")
+        form.id = "ratingUpdateForm"
+        form.name = response.bookID
+        var rating = document.createElement("input")
+        rating.id = response.bookID.toString()
+        rating.type = "number"
+        rating.value = response.bookRating.toString()
+        form.appendChild(rating)
+        var update = document.createElement("button")
+        update.id = "update"
+        update.value = response.bookID.toString()
+        update.className = "btn btn-primary btn-mine"
+        update.innerHTML = "Update"
+        update.type = "submit"
+        form.append(update)
+        var deleteButton = document.createElement("button")
+        deleteButton.value = response.bookID
+        deleteButton.className = "btn btn-primary btn-mine"
+        deleteButton.id = "delete"
+        deleteButton.innerHTML = "Delete"
+        var errorDiv = document.createElement("div")
+        errorDiv.id = response.bookID + "error"
+        form.appendChild(deleteButton)
+        form.appendChild(errorDiv)
+        div.appendChild(form)
+        $("#ratingsCol").append(div)
+
+    }
+
+    function addRating(callback) {
+        var rating = new Object()
+        rating.bookID= document.getElementById('bookChoice').value;
+        rating.bookRating = document.getElementById('bookRating').value;
+        
+        $.ajax({url:"/",
+                method: "POST",
+                dataType: "json",
+                data: JSON.stringify(rating),
+                contentType:'application/json;charset=UTF-8', 
+                success: function (response) {
+                    callback(response)
+                }
+                })
+        event.preventDefault();  
+    }
+</script>
+{% endblock %}

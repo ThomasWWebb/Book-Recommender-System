@@ -1,0 +1,84 @@
+{% extends "header.html" %}
+{% block content %}
+    <div class = "container" id="users">
+        <h2>Users</h2>
+        {% for user in users %}
+            <div class="container" id="{{ user.id }}userContainer">
+                <span id="{{user.id}}span">{{user.username}}</span>
+                <form id="userUpdateForm" name="{{user.id}}">
+                    <label>Username</label>
+                    <input type="text" value="{{user.username}}" name="username" id="{{user.id}}username">
+                    <label>Password</label>
+                    <input type="text" value="{{user.password}}" name="password" id="{{user.id}}password">
+                    <button type="submit" class="btn btn-primary btn-mine" value="Update" id="update">Update</button>
+                    <button class="btn btn-primary btn-mine" value="{{user.id}}" id="delete">Delete</button>
+                    <div id="{{user.id}}error"></div>
+                </form>
+            </div>
+        {% endfor %}
+    </div>
+    <script type="text/javascript">
+    $(document).ready(function() {
+        $(document).on('submit', "#userUpdateForm", function (event) {
+                event.preventDefault()
+                id = $(this).attr("name")
+                if (validateUser(id)) {
+                    updateUser(id)
+                } else {
+                    document.getElementById( id.toString() + "error").innerHTML = "Please enter a username and password"
+                }
+            })
+
+        $(document).on('click', "#delete", function (event) {
+                event.preventDefault()
+                deleteUser($(this).attr("value"))
+                contID = "#" + ($(this).attr("value")).toString() + "userContainer"
+                $(contID).remove();
+            })
+    })
+
+    function validateUser(id) {
+        username= document.getElementById(id + "username").value;
+        password = document.getElementById(id + "password").value;
+        if (username.length > 0 && password.length > 0) {
+                return true
+            }
+        return false
+    }
+    
+    function deleteUser(id) {
+            var user = new Object()
+            user.id= id
+            
+            $.ajax({url:"/userDelete",
+                    method: "POST",
+                    dataType: "json",
+                    data: JSON.stringify(user),
+                    contentType:'application/json;charset=UTF-8',
+                    })
+            event.preventDefault();
+        }
+
+    function updateUser(id) {
+            var user = new Object()
+            user.username= document.getElementById(id + "username").value;
+            user.password = document.getElementById(id + "password").value;
+            user.id = id
+            $.ajax({url:"/userUpdate",
+                    method: "POST",
+                    dataType: "json",
+                    data: JSON.stringify(user),
+                    contentType:'application/json;charset=UTF-8',
+                    success: function (response) {
+                        if (response == "true") {
+                            document.getElementById(id.toString() + "error").innerHTML = ""
+                            document.getElementById(id + "span").innerHTML = user.username
+                        } else {
+                            document.getElementById(id + "error").innerHTML = "There is already a user with that username"
+                        }
+                    }
+                    })
+            event.preventDefault()
+        }
+    </script>
+{% endblock %}

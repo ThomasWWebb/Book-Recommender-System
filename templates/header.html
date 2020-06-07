@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Recommender System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.2/css/bulma.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap-4.4.1-dist/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylesheet.css') }}" />
+</head>
+
+<body>
+    <div id="total-container" class="container-fluid">
+            <nav class="navbar navbar-expand-md navbar-light bg-light">
+                      <ul class="navbar-nav">
+                        <li class="nav-item active">
+                            <a href="{{ '/' }}" class="navbar-item">
+                                Home
+                            </a>
+                        </li>
+                        {% if current_user.is_anonymous %}
+                            <li class="nav-item">
+                                <a href="{{ '/login' }}" class="navbar-item">
+                                    Login
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ '/signup' }}" class="navbar-item">
+                                    Sign Up
+                                </a>
+                            </li>
+                        {% else %}
+                            {% if current_user.username == "admin" %}
+                                <li class="nav-item"></li>
+                                    <a href="/books" class="navbar-item">
+                                        Books
+                                    </a>
+                                </li>
+                                <li class="nav-item"></li>
+                                    <a href="/users" class="navbar-item">
+                                        Users
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="nav-item"></li>
+                                    <a href="/profile" class="navbar-item">
+                                        Profile
+                                    </a>
+                                </li>
+                            {% endif %}
+                            <li class="nav-item"></li>
+                                <a href="/logout" class="navbar-item">
+                                    Logout
+                                </a>
+                            </li>
+                        {% endif %}
+                      </ul>
+                  </nav>
+            {% block content %}{% endblock %}
+    </div>
+</body>
+
+</html>
